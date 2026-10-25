@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+
+<section class="page-heading">
+  <p class="eyebrow">Setup check</p>
+  <h1>Database connection</h1>
+  <p>If you can see the categories below, the website connected to MySQL successfully.</p>
+</section>
+
+<ul class="category-list">
+  <% categories.forEach(function (category) { %>
+    <li><span class="category-dot" aria-hidden="true"></span><%= category.name %></li>
+  <% }); %>
+</ul>
+<p class="success-note"><%= categories.length %> categories loaded from the database.</p>
+
+<%- include('partials/footer') %>

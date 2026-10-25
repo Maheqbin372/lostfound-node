@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> - Lost &amp; Found</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="/" aria-label="Lost and Found home"><span class="logo-mark">L</span><span>Lost <span class="logo-amp">&amp;</span> Found</span></a>
+  <nav class="main-nav" aria-label="Main navigation">
+    <a href="/">Home</a>
+    <a href="/items">Browse items</a>
+    <a href="/report">Report item</a>
+    <% if (currentUser) { %>
+      <% if (currentUser.role === 'admin') { %><a href="/admin/claims">Review claims</a><% } %>
+      <span class="nav-greeting">Hi, <%= currentUser.name %></span>
+      <form class="nav-logout" method="post" action="/logout"><button type="submit" class="nav-link-button">Log out</button></form>
+    <% } else { %>
+      <a href="/login">Log in</a>
+      <a class="nav-register" href="/register">Create account</a>
+    <% } %>
+  </nav>
+</header>
+<main class="container">

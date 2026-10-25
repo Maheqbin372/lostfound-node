@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<section class="page-heading">
+  <p class="eyebrow">Help reunite an item</p>
+  <h1>Report an item</h1>
+  <p>Share a few details so the community can help find its owner.</p>
+</section>
+
+<% if (success) { %>
+  <div class="success-note" role="status">Your report was saved. Thank you for helping the community.</div>
+<% } %>
+
+<% if (errors.length) { %>
+  <div class="errors" role="alert">
+    <% errors.forEach(function (msg) { %><p><%= msg %></p><% }); %>
+  </div>
+<% } %>
+
+<form class="form-box" method="post" action="/report">
+  <label for="type">Report type</label>
+  <select id="type" name="type" required>
+    <option value="lost" <%= form.type === 'lost' ? 'selected' : '' %>>I lost this item</option>
+    <option value="found" <%= form.type === 'found' ? 'selected' : '' %>>I found this item</option>
+  </select>
+
+  <label for="title">Item name</label>
+  <input type="text" id="title" name="title" maxlength="100" value="<%= form.title || '' %>" required>
+
+  <label for="description">Description (optional)</label>
+  <textarea id="description" name="description" rows="5" maxlength="5000"><%= form.description || '' %></textarea>
+
+  <label for="date_reported">Date lost or found</label>
+  <input type="date" id="date_reported" name="date_reported" value="<%= form.date_reported || '' %>" required>
+
+  <label for="category_id">Category</label>
+  <select id="category_id" name="category_id" required>
+    <option value="">Choose a category</option>
+    <% categories.forEach(function (category) { %>
+      <option value="<%= category.category_id %>" <%= Number(form.category_id) === category.category_id ? 'selected' : '' %>><%= category.name %></option>
+    <% }); %>
+  </select>
+
+  <label for="location_id">Location</label>
+  <select id="location_id" name="location_id" required>
+    <option value="">Choose a location</option>
+    <% locations.forEach(function (location) { %>
+      <option value="<%= location.location_id %>" <%= Number(form.location_id) === location.location_id ? 'selected' : '' %>><%= location.name %></option>
+    <% }); %>
+  </select>
+
+  <button type="submit">Submit report</button>
+</form>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,81 @@
+<%- include('partials/header') %>
+
+<section class="page-heading">
+  <p class="eyebrow">Browse the board</p>
+  <h1>Lost and found items</h1>
+  <p>Search reports by item name or description, then narrow the results using the filters.</p>
+</section>
+
+<form class="filter-box" method="get" action="/items">
+  <div class="filter-grid">
+    <label class="filter-field filter-keyword">
+      <span>Keyword</span>
+      <input type="search" name="keyword" maxlength="100" value="<%= filters.keyword %>" placeholder="Try wallet, phone, or a detail">
+    </label>
+    <label class="filter-field">
+      <span>Report type</span>
+      <select name="type">
+        <option value="">Lost and found</option>
+        <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost</option>
+        <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found</option>
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>Category</span>
+      <select name="category_id">
+        <option value="">All categories</option>
+        <% categories.forEach(function (category) { %>
+          <option value="<%= category.category_id %>" <%= String(filters.category_id) === String(category.category_id) ? 'selected' : '' %>><%= category.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>Location</span>
+      <select name="location_id">
+        <option value="">All locations</option>
+        <% locations.forEach(function (location) { %>
+          <option value="<%= location.location_id %>" <%= String(filters.location_id) === String(location.location_id) ? 'selected' : '' %>><%= location.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label class="filter-field">
+      <span>Reported from</span>
+      <input type="date" name="date_from" value="<%= filters.date_from %>">
+    </label>
+    <label class="filter-field">
+      <span>Reported until</span>
+      <input type="date" name="date_to" value="<%= filters.date_to %>">
+    </label>
+  </div>
+  <div class="filter-actions">
+    <button type="submit">Search items</button>
+    <a class="filter-clear" href="/items">Clear filters</a>
+  </div>
+</form>
+
+<div class="results-heading">
+  <h2>Reports</h2>
+  <p><%= items.length %> <%= items.length === 1 ? 'item' : 'items' %> found</p>
+</div>
+
+<% if (items.length === 0) { %>
+  <div class="empty-state">
+    <h3>No matching reports yet</h3>
+    <p>Try a different keyword or clear some filters.</p>
+    <a class="btn" href="/items">Show all items</a>
+  </div>
+<% } else { %>
+  <div class="item-grid">
+    <% items.forEach(function (item) { %>
+      <article class="item-card">
+        <span class="badge badge-<%= item.type %>"><%= item.type %></span>
+        <span class="badge badge-status-<%= item.status %>"><%= item.status %></span>
+        <h3><a href="/items/<%= item.item_id %>"><%= item.title %></a></h3>
+        <% if (item.description) { %><p><%= item.description %></p><% } %>
+        <p class="meta"><%= item.category %> &middot; <%= item.location %> &middot; <%= new Date(item.date_reported).toLocaleDateString('en-GB') %></p>
+      </article>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+
+<section class="page-heading">
+  <p class="eyebrow">Admin area</p>
+  <h1>Review item claims</h1>
+  <p>Review the claimant's message before deciding whether to approve or reject a claim.</p>
+</section>
+
+<% if (result === 'approved') { %>
+  <p class="success-note claim-notice">Claim approved. The item status is now claimed.</p>
+<% } else if (result === 'rejected') { %>
+  <p class="claim-notice">Claim rejected. The item remains open.</p>
+<% } else if (result === 'closed') { %>
+  <p class="claim-notice">This item is no longer open, so its claim could not be approved.</p>
+<% } else if (result === 'missing') { %>
+  <p class="claim-notice">That claim is no longer pending.</p>
+<% } %>
+
+<% if (claims.length === 0) { %>
+  <div class="empty-state">
+    <h2>No pending claims</h2>
+    <p>New claims for open found items will appear here.</p>
+  </div>
+<% } else { %>
+  <div class="admin-claim-list">
+    <% claims.forEach(function (claim) { %>
+      <article class="admin-claim-card">
+        <div class="admin-claim-heading">
+          <div>
+            <p class="eyebrow">Claim #<%= claim.claim_id %></p>
+            <h2><a href="/items/<%= claim.item_id %>"><%= claim.item_title %></a></h2>
+            <p class="meta"><%= claim.category %> &middot; <%= claim.location %> &middot; Reported <%= new Date(claim.date_reported).toLocaleDateString('en-GB') %></p>
+          </div>
+          <span class="badge badge-found">Found</span>
+        </div>
+        <p class="claimant-line">Claim submitted by <strong><%= claim.claimant %></strong><% if (claim.created_at) { %> on <%= new Date(claim.created_at).toLocaleDateString('en-GB') %><% } %></p>
+        <blockquote class="claim-message"><%= claim.message %></blockquote>
+        <div class="admin-claim-actions">
+          <form method="post" action="/admin/claims/<%= claim.claim_id %>/approve">
+            <button type="submit" class="approve-button">Approve claim</button>
+          </form>
+          <form method="post" action="/admin/claims/<%= claim.claim_id %>/reject">
+            <button type="submit" class="reject-button">Reject claim</button>
+          </form>
+        </div>
+      </article>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

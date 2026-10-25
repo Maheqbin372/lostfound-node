@@ -1,0 +1,80 @@
+<%- include('partials/header') %>
+
+<a class="back-link" href="/items">&larr; Back to browse items</a>
+
+<article class="detail-card">
+  <div class="detail-badges">
+    <span class="badge badge-<%= item.type %>"><%= item.type %></span>
+    <span class="badge badge-status-<%= item.status %>"><%= item.status %></span>
+  </div>
+  <h1><%= item.title %></h1>
+  <p class="detail-meta"><%= item.category %> &middot; <%= item.location %> &middot; Reported <%= new Date(item.date_reported).toLocaleDateString('en-GB') %></p>
+  <% if (item.description) { %>
+    <section class="detail-description">
+      <h2>Item details</h2>
+      <p><%= item.description %></p>
+    </section>
+  <% } %>
+  <p class="reported-by">Reported by <strong><%= item.reporter %></strong></p>
+</article>
+
+<% if (item.type === 'lost' && item.status === 'open') { %>
+  <section class="matches-section">
+    <div class="page-heading">
+      <p class="eyebrow">Matching suggestions</p>
+      <h2>Possible found items</h2>
+      <p>Suggestions use the same category and reports within 30 days. Items from the same location appear first.</p>
+    </div>
+    <% if (matches.length === 0) { %>
+      <div class="empty-state"><p>No matching found reports yet.</p></div>
+    <% } else { %>
+      <div class="item-grid">
+        <% matches.forEach(function (match) { %>
+          <article class="item-card">
+            <span class="badge badge-found">found</span>
+            <h3><a href="/items/<%= match.item_id %>"><%= match.title %></a></h3>
+            <% if (match.description) { %><p><%= match.description %></p><% } %>
+            <p class="meta"><%= match.category %> &middot; <%= match.location %> &middot; <%= new Date(match.date_reported).toLocaleDateString('en-GB') %></p>
+          </article>
+        <% }); %>
+      </div>
+    <% } %>
+  </section>
+<% } %>
+
+<% if (success) { %>
+  <p class="success-note claim-notice">Your claim was sent to the person who reported this item.</p>
+<% } else if (duplicate || hasClaim) { %>
+  <p class="claim-notice">You have already sent a claim for this item.</p>
+<% } %>
+
+<% if (item.type === 'found' && item.status === 'open' && currentUser && item.reported_by !== currentUser.user_id && !hasClaim && !success && !duplicate) { %>
+  <section class="claim-box">
+    <div class="page-heading">
+      <p class="eyebrow">Is this yours?</p>
+      <h2>Send an ownership claim</h2>
+      <p>Describe a detail that can help the reporter confirm the item belongs to you. Do not include passwords or other private account details.</p>
+    </div>
+    <% if (errors.length) { %>
+      <div class="errors" role="alert">
+        <% errors.forEach(function (error) { %><p><%= error %></p><% }); %>
+      </div>
+    <% } %>
+    <form class="form-box claim-form" method="post" action="/items/<%= item.item_id %>/claim">
+      <label for="claim-message">How can you identify it?</label>
+      <textarea id="claim-message" name="message" rows="5" maxlength="1000" required><%= message %></textarea>
+      <p class="form-help">Write at least 10 characters. The item reporter will read your message.</p>
+      <button type="submit">Send claim</button>
+    </form>
+  </section>
+<% } else if (item.reported_by === (currentUser && currentUser.user_id)) { %>
+  <p class="claim-notice">This is your report.</p>
+<% } else if (item.type === 'found' && item.status === 'open' && !currentUser) { %>
+  <p class="claim-notice"><a href="/login">Log in</a> to send an ownership claim.</p>
+<% } else if (item.type !== 'found') { %>
+  <p class="claim-notice">Claims can be sent for found items.</p>
+<% } else { %>
+  <p class="claim-notice">This item is no longer open for claims.</p>
+<% } %>
+
+<%- include('partials/footer') %>

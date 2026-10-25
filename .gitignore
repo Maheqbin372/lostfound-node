@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+.db.local.js
+db.local.js
+.DS_Store
+npm-debug.log*
+coverage/
+*.sql.gz
+/DEMO.md
