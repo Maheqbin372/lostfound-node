@@ -4,6 +4,7 @@
 erDiagram
     USERS ||--o{ ITEMS : reports
     USERS ||--o{ CLAIMS : submits
+    USERS ||--o{ PASSWORD_RESET_TOKENS : requests
     CATEGORIES ||--o{ ITEMS : classifies
     LOCATIONS ||--o{ ITEMS : locates
     ITEMS ||--o{ CLAIMS : receives
@@ -15,6 +16,7 @@ erDiagram
         varchar phone
         varchar password_hash
         enum role
+        int session_version
     }
     CATEGORIES {
         int category_id PK
@@ -43,6 +45,14 @@ erDiagram
         enum status
         timestamp created_at
     }
+    PASSWORD_RESET_TOKENS {
+        bigint reset_id PK
+        int user_id FK
+        char token_hash UK
+        datetime expires_at
+        datetime used_at
+        timestamp created_at
+    }
 ```
 
 The SQL definitions and foreign-key constraints are in [`schema.sql`](schema.sql).
@@ -56,6 +66,7 @@ The SQL definitions and foreign-key constraints are in [`schema.sql`](schema.sql
 | `categories` | Wallet, Phone ইত্যাদি category | একটি category-তে অনেক item থাকতে পারে। |
 | `locations` | Library, Canteen ইত্যাদি জায়গা | একটি location-এ অনেক item থাকতে পারে। |
 | `claims` | মালিকানার দাবি, message এবং সিদ্ধান্ত | প্রতিটি claim একটি item এবং একজন claimant-এর সঙ্গে যুক্ত। একটি item-এ অনেক claim থাকতে পারে। |
+| `password_reset_tokens` | Password reset link-এর hash, মেয়াদ ও ব্যবহারের সময় | প্রতিটি token একজন user-এর। Reset-এর পর পুরোনো login session আর কাজ করে না। |
 
 `PK` হলো table-এর প্রতিটি record চেনার নিজস্ব ID। `FK` অন্য table-এর record-এর সঙ্গে সম্পর্ক রাখে। `UK` মানে একই value দ্বিতীয়বার রাখা যায় না, যেমন account email।
 

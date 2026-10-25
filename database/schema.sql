@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(20) DEFAULT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+  session_version INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id),
   UNIQUE KEY email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -59,6 +60,17 @@ CREATE TABLE IF NOT EXISTS claims (
   KEY claimed_by (claimed_by),
   CONSTRAINT claims_item_fk FOREIGN KEY (item_id) REFERENCES items (item_id),
   CONSTRAINT claims_user_fk FOREIGN KEY (claimed_by) REFERENCES users (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  reset_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY password_reset_user (user_id),
+  CONSTRAINT password_reset_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO categories (name) VALUES

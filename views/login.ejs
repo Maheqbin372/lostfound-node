@@ -6,6 +6,10 @@
   <p>Sign in to manage your lost and found reports.</p>
 </section>
 
+<% if (typeof passwordReset !== 'undefined' && passwordReset) { %>
+  <p class="success-note" role="status">Password changed. Log in with your new password.</p>
+<% } %>
+
 <% if (errors.length) { %>
   <div class="errors" role="alert">
     <% errors.forEach(function (msg) { %><p><%= msg %></p><% }); %>
@@ -20,6 +24,7 @@
   <input type="password" id="password" name="password" autocomplete="current-password" required>
 
   <button type="submit">Log in</button>
+  <p class="form-help"><a href="/forgot-password">Forgot password?</a></p>
   <p class="form-help">New here? <a href="/register">Create an account</a>.</p>
 </form>
 

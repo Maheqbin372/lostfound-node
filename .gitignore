@@ -8,3 +8,5 @@ npm-debug.log*
 coverage/
 *.sql.gz
 /DEMO.md
+mail.local.js
+.local-mail/

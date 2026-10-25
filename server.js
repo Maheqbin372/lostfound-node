@@ -5,6 +5,7 @@ const pool = require('./db');
 const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const adminRoutes = require('./routes/admin');
+const passwordResetRoutes = require('./routes/password-reset');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,9 +21,24 @@ app.use(session({
   saveUninitialized: false,
   cookie: { httpOnly: true, sameSite: 'lax', maxAge: 2 * 60 * 60 * 1000 }
 }));
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.currentUser = req.session.user || null;
-  next();
+  if (!req.session.user) return next();
+  try {
+    const [users] = await pool.query('SELECT session_version FROM users WHERE user_id=?', [req.session.user.user_id]);
+    if (!users.length || users[0].session_version !== (req.session.user.session_version ?? 0)) {
+      res.locals.currentUser = null;
+      return req.session.regenerate(error => {
+        if (error) return next(error);
+        res.clearCookie('connect.sid', { httpOnly: true, sameSite: 'lax' });
+        next();
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Could not validate session:', error.code || 'database error');
+    res.status(503).send('Could not connect to your account. Please try again shortly.');
+  }
 });
 
 app.get('/test', async (req, res) => {
@@ -57,6 +73,7 @@ app.get('/', async (req, res) => {
 
 app.use(itemRoutes);
 app.use(authRoutes);
+app.use(passwordResetRoutes);
 app.use(adminRoutes);
 
 app.listen(PORT, () => {

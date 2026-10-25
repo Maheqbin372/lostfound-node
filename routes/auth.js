@@ -45,7 +45,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.get('/login', (req, res) => {
-  res.render('login', { title: 'Log in', errors: [] });
+  res.render('login', { title: 'Log in', errors: [], passwordReset: req.query.reset === 'success' });
 });
 
 router.post('/login', async (req, res) => {
@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [users] = await pool.query(
-      'SELECT user_id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1',
+      'SELECT user_id, name, email, password_hash, role, session_version FROM users WHERE email = ? LIMIT 1',
       [email]
     );
     const user = users[0];
@@ -68,7 +68,8 @@ router.post('/login', async (req, res) => {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        session_version: user.session_version
       };
       res.redirect('/');
     });
