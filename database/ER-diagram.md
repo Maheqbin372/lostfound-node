@@ -5,6 +5,11 @@ erDiagram
     USERS ||--o{ ITEMS : reports
     USERS ||--o{ CLAIMS : submits
     USERS ||--o{ PASSWORD_RESET_TOKENS : requests
+    USERS ||--o{ CONVERSATIONS : reports_in
+    USERS ||--o{ CONVERSATIONS : participates_in
+    USERS ||--o{ MESSAGES : sends
+    ITEMS ||--o{ CONVERSATIONS : discusses
+    CONVERSATIONS ||--o{ MESSAGES : contains
     CATEGORIES ||--o{ ITEMS : classifies
     LOCATIONS ||--o{ ITEMS : locates
     ITEMS ||--o{ CLAIMS : receives
@@ -30,6 +35,7 @@ erDiagram
         int item_id PK
         varchar title
         text description
+        varchar photo_filename
         enum type
         enum status
         date date_reported
@@ -53,6 +59,22 @@ erDiagram
         datetime used_at
         timestamp created_at
     }
+    CONVERSATIONS {
+        bigint conversation_id PK
+        int item_id FK
+        int reporter_id FK
+        int participant_id FK
+        bigint reporter_last_read
+        bigint participant_last_read
+        timestamp created_at
+    }
+    MESSAGES {
+        bigint message_id PK
+        bigint conversation_id FK
+        int sender_id FK
+        text body
+        timestamp created_at
+    }
 ```
 
 The SQL definitions and foreign-key constraints are in [`schema.sql`](schema.sql).
@@ -67,6 +89,8 @@ The SQL definitions and foreign-key constraints are in [`schema.sql`](schema.sql
 | `locations` | Library, Canteen ইত্যাদি জায়গা | একটি location-এ অনেক item থাকতে পারে। |
 | `claims` | মালিকানার দাবি, message এবং সিদ্ধান্ত | প্রতিটি claim একটি item এবং একজন claimant-এর সঙ্গে যুক্ত। একটি item-এ অনেক claim থাকতে পারে। |
 | `password_reset_tokens` | Password reset link-এর hash, মেয়াদ ও ব্যবহারের সময় | প্রতিটি token একজন user-এর। Reset-এর পর পুরোনো login session আর কাজ করে না। |
+| `conversations` | একটি item নিয়ে reporter ও অন্য user-এর conversation | একই item ও একই participant-এর জন্য একটি conversation থাকে। |
+| `messages` | Conversation-এর message, sender ও সময় | একটি conversation-এ অনেক message থাকে। কেবল দুই participant website-এ conversation খুলতে পারে। |
 
 `PK` হলো table-এর প্রতিটি record চেনার নিজস্ব ID। `FK` অন্য table-এর record-এর সঙ্গে সম্পর্ক রাখে। `UK` মানে একই value দ্বিতীয়বার রাখা যায় না, যেমন account email।
 

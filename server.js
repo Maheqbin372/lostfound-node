@@ -6,6 +6,9 @@ const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const adminRoutes = require('./routes/admin');
 const passwordResetRoutes = require('./routes/password-reset');
+const messageRoutes = require('./routes/messages');
+const photoRoutes = require('./routes/photos');
+const { formToken } = require('./services/form-security');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +26,7 @@ app.use(session({
 }));
 app.use(async (req, res, next) => {
   res.locals.currentUser = req.session.user || null;
+  res.locals.formCsrf = null;
   if (!req.session.user) return next();
   try {
     const [users] = await pool.query('SELECT session_version FROM users WHERE user_id=?', [req.session.user.user_id]);
@@ -34,6 +38,7 @@ app.use(async (req, res, next) => {
         next();
       });
     }
+    res.locals.formCsrf = formToken(req);
     next();
   } catch (error) {
     console.error('Could not validate session:', error.code || 'database error');
@@ -56,7 +61,7 @@ app.get('/test', async (req, res) => {
 app.get('/', async (req, res) => {
   try {
     const [latest] = await pool.query(
-      `SELECT i.item_id, i.title, i.type, i.status,
+      `SELECT i.item_id, i.title, i.type, i.status, i.photo_filename,
               c.name AS category, l.name AS location, i.date_reported
        FROM items AS i
        LEFT JOIN categories AS c ON c.category_id = i.category_id
@@ -75,6 +80,8 @@ app.use(itemRoutes);
 app.use(authRoutes);
 app.use(passwordResetRoutes);
 app.use(adminRoutes);
+app.use(messageRoutes);
+app.use(photoRoutes);
 
 app.listen(PORT, () => {
   console.log(`Lost & Found is running at http://localhost:${PORT}`);

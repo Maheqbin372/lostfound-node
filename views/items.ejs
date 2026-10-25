@@ -68,6 +68,7 @@
   <div class="item-grid">
     <% items.forEach(function (item) { %>
       <article class="item-card">
+        <% if (item.photo_filename) { %><img class="card-photo" src="/item-photos/<%= item.photo_filename %>" alt="Photo of <%= item.title %>" loading="lazy"><% } %>
         <span class="badge badge-<%= item.type %>"><%= item.type %></span>
         <span class="badge badge-status-<%= item.status %>"><%= item.status %></span>
         <h3><a href="/items/<%= item.item_id %>"><%= item.title %></a></h3>

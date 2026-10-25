@@ -16,7 +16,8 @@
   </div>
 <% } %>
 
-<form class="form-box" method="post" action="/report">
+<form class="form-box" method="post" action="/report" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="<%= formCsrf %>">
   <label for="type">Report type</label>
   <select id="type" name="type" required>
     <option value="lost" <%= form.type === 'lost' ? 'selected' : '' %>>I lost this item</option>
@@ -28,6 +29,10 @@
 
   <label for="description">Description (optional)</label>
   <textarea id="description" name="description" rows="5" maxlength="5000"><%= form.description || '' %></textarea>
+
+  <label for="photo">Item photo (optional)</label>
+  <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+  <p class="form-help">One JPG, PNG or WebP image, up to 5 MB. Photos are visible to everyone viewing the report.</p>
 
   <label for="date_reported">Date lost or found</label>
   <input type="date" id="date_reported" name="date_reported" value="<%= form.date_reported || '' %>" required>

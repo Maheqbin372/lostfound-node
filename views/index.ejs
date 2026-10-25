@@ -14,6 +14,7 @@
   <div class="item-grid">
     <% latest.forEach(function (it) { %>
       <article class="item-card">
+        <% if (it.photo_filename) { %><img class="card-photo" src="/item-photos/<%= it.photo_filename %>" alt="Photo of <%= it.title %>" loading="lazy"><% } %>
         <span class="badge badge-<%= it.type %>"><%= it.type %></span>
         <span class="badge badge-status-<%= it.status %>"><%= it.status %></span>
         <h3><a href="/items/<%= it.item_id %>"><%= it.title %></a></h3>

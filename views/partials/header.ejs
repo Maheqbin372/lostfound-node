@@ -14,6 +14,7 @@
     <a href="/items">Browse items</a>
     <a href="/report">Report item</a>
     <% if (currentUser) { %>
+      <a href="/messages">Messages</a>
       <% if (currentUser.role === 'admin') { %><a href="/admin/claims">Review claims</a><% } %>
       <span class="nav-greeting">Hi, <%= currentUser.name %></span>
       <form class="nav-logout" method="post" action="/logout"><button type="submit" class="nav-link-button">Log out</button></form>

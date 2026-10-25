@@ -9,6 +9,7 @@
   </div>
   <h1><%= item.title %></h1>
   <p class="detail-meta"><%= item.category %> &middot; <%= item.location %> &middot; Reported <%= new Date(item.date_reported).toLocaleDateString('en-GB') %></p>
+  <% if (item.photo_filename) { %><img class="detail-photo" src="/item-photos/<%= item.photo_filename %>" alt="Photo of <%= item.title %>"><% } %>
   <% if (item.description) { %>
     <section class="detail-description">
       <h2>Item details</h2>
@@ -17,6 +18,39 @@
   <% } %>
   <p class="reported-by">Reported by <strong><%= item.reporter %></strong></p>
 </article>
+
+<% if (currentUser && item.reported_by === currentUser.user_id) { %>
+  <section class="photo-editor">
+    <% if (typeof photoNotice !== 'undefined' && photoNotice) { %><p class="success-note" role="status">Your item photo was updated.</p><% } %>
+    <% if (typeof photoError !== 'undefined' && photoError) { %><p class="errors" role="alert"><%= photoError %></p><% } %>
+    <form class="form-box" method="post" action="/items/<%= item.item_id %>/photo" enctype="multipart/form-data">
+      <input type="hidden" name="csrf" value="<%= formCsrf %>">
+      <label for="item-photo">Add or replace item photo</label>
+      <input type="file" id="item-photo" name="photo" accept="image/jpeg,image/png,image/webp">
+      <p class="form-help">One JPG, PNG or WebP, up to 5 MB. This photo is public.</p>
+      <% if (item.photo_filename) { %><label class="checkbox-label"><input type="checkbox" name="remove_photo" value="1"> Remove current photo</label><% } %>
+      <button type="submit">Save photo</button>
+    </form>
+  </section>
+<% } %>
+
+<section class="contact-section">
+  <% if (currentUser && item.reported_by !== currentUser.user_id) { %>
+    <h2>Contact the reporter</h2>
+    <% if (typeof contactError !== 'undefined' && contactError) { %><p class="errors" role="alert"><%= contactError %></p><% } %>
+    <form class="form-box" method="post" action="/items/<%= item.item_id %>/messages">
+      <input type="hidden" name="csrf" value="<%= formCsrf %>">
+      <label for="contact-message">Your message to <%= item.reporter %></label>
+      <textarea id="contact-message" name="message" rows="4" maxlength="2000" required></textarea>
+      <p class="form-help">This starts a private conversation. A message does not approve an ownership claim.</p>
+      <button type="submit">Message reporter</button>
+    </form>
+  <% } else if (currentUser) { %>
+    <p class="form-help">Replies from other users appear in <a href="/messages">Messages</a>.</p>
+  <% } else { %>
+    <p class="form-help"><a href="/login">Log in</a> to message the reporter.</p>
+  <% } %>
+</section>
 
 <% if (item.type === 'lost' && item.status === 'open') { %>
   <section class="matches-section">
@@ -31,6 +65,7 @@
       <div class="item-grid">
         <% matches.forEach(function (match) { %>
           <article class="item-card">
+            <% if (match.photo_filename) { %><img class="card-photo" src="/item-photos/<%= match.photo_filename %>" alt="Photo of <%= match.title %>" loading="lazy"><% } %>
             <span class="badge badge-found">found</span>
             <h3><a href="/items/<%= match.item_id %>"><%= match.title %></a></h3>
             <% if (match.description) { %><p><%= match.description %></p><% } %>

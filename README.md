@@ -12,6 +12,8 @@ A course project website for reporting lost or found items. It uses Node.js, Exp
 - Account registration, login, and logout
 - Password recovery with expiring, single-use links and invalidation of existing sessions
 - Lost/found report form with category and location choices
+- Optional item photo upload, plus photo replacement/removal by the reporter
+- Private per-item conversations with replies, unread counts and older-message pages
 - Report validation and database saving for the signed-in user
 - Responsive layout using Times New Roman
 
@@ -46,3 +48,13 @@ The login page links to **Forgot password?**. Recovery links expire after 15 min
 This local version writes recovery messages to a private temporary folder outside the project; it does not send email or show reset links on public pages. The local folder is available through `require('./services/recovery-mail').outboxDirectory`. Only the host laptop user should access it. `APP_BASE_URL` controls the fixed link origin (default `http://localhost:3000`); it is never taken from a request header.
 
 Outgoing email has not been configured. Recovery requests are disabled when `NODE_ENV=production` until an email delivery service is implemented.
+
+## Photos and messages
+
+For an existing database, run `node database/migrations/002-photos-messaging.js` before starting the updated server. The migration is safe to rerun. A fresh `database/schema.sql` already includes the photo column, conversations and messages tables.
+
+Reporters can upload one JPG, PNG or WebP photo up to 5 MB, with a maximum input size of 20 megapixels. The server validates the decoded image, removes metadata, resizes it to fit within 1600 by 1600 pixels, and stores a WebP copy. Photos appear on the home page, browse cards, matching suggestions and item details. The reporter can replace or remove the photo from the item page.
+
+Uploaded files live in `storage/item-photos/`, outside the static public directory and ignored by Git. Keep this directory with the database when backing up or moving the local installation. Reports and photos are public on the website; upload only images intended for the report.
+
+Sign in and open someone else's item to use **Message reporter**. Replies appear under **Messages**. Conversations are restricted to the reporter and the other participant; an admin role does not give access to other people's conversations. Older messages remain accessible using pagination. Refresh the inbox or conversation to check for replies; this version does not use live push notifications or email alerts.

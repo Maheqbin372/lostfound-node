@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+<section class="page-heading">
+  <p class="eyebrow">Your inbox</p>
+  <h1>Messages</h1>
+  <p>Private conversations about lost and found reports. Refresh this page to check for replies.</p>
+</section>
+<% if (!conversations.length) { %>
+  <div class="empty-state"><h2>No conversations yet</h2><p>Open another person’s report and use “Message reporter” to get in touch.</p><a class="btn" href="/items">Browse items</a></div>
+<% } else { %>
+  <div class="inbox-list">
+    <% conversations.forEach(function (conversation) { %>
+      <a class="conversation-card" href="/messages/<%= conversation.conversation_id %>">
+        <div class="conversation-heading"><h2><%= conversation.other_name %></h2><% if (conversation.unread_count > 0) { %><span class="unread-count"><%= conversation.unread_count %> unread</span><% } %></div>
+        <p class="meta">About: <%= conversation.item_title %></p>
+        <p class="message-preview"><%= (conversation.last_message || '').slice(0,120) %></p>
+      </a>
+    <% }); %>
+  </div>
+  <p class="message-pagination"><% if (page>1) { %><a href="/messages?page=<%= page-1 %>">Previous conversations</a><% } %> <% if (hasNext) { %><a href="/messages?page=<%= page+1 %>">More conversations</a><% } %></p>
+<% } %>
+<%- include('partials/footer') %>

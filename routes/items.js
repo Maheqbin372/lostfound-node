@@ -1,5 +1,7 @@
 const express = require('express');
 const pool = require('../db');
+const { receivePhoto, savePhoto, removePhoto } = require('../services/item-photos');
+const { validFormToken, rateLimited } = require('../services/form-security');
 
 const router = express.Router();
 
@@ -31,7 +33,7 @@ async function getFormOptions() {
 async function getItemDetails(itemId) {
   const [items] = await pool.query(
     `SELECT i.item_id, i.title, i.description, i.type, i.status, i.date_reported,
-            i.category_id, i.location_id, i.reported_by,
+            i.category_id, i.location_id, i.reported_by, i.photo_filename,
             c.name AS category, l.name AS location, u.name AS reporter
      FROM items AS i
      LEFT JOIN categories AS c ON c.category_id = i.category_id
@@ -65,7 +67,7 @@ router.get('/items/:id', async (req, res) => {
 
     if (item.type === 'lost' && item.status === 'open') {
       [matches] = await pool.query(
-        `SELECT found.item_id, found.title, found.description, found.date_reported,
+        `SELECT found.item_id, found.title, found.description, found.date_reported, found.photo_filename,
                 category.name AS category, location.name AS location
          FROM items AS found
          LEFT JOIN categories AS category ON category.category_id = found.category_id
@@ -90,7 +92,10 @@ router.get('/items/:id', async (req, res) => {
       matches,
       hasClaim,
       success: req.query.claim === 'sent',
-      duplicate: req.query.claim === 'duplicate'
+      duplicate: req.query.claim === 'duplicate',
+      contactError: req.query.message === 'invalid' ? 'Write a message between 1 and 2,000 characters.' : req.query.message === 'limited' ? 'Please wait a minute before sending more messages.' : '',
+      photoNotice: req.query.photo === 'saved',
+      photoError: req.query.photo === 'invalid' ? 'Choose one readable JPG, PNG or WebP photo, 5 MB or smaller and under 20 megapixels.' : ''
     });
   } catch (err) {
     console.error('Could not load item details:', err.message);
@@ -185,7 +190,7 @@ router.get('/items', async (req, res) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const [items] = await pool.query(
-      `SELECT i.item_id, i.title, i.description, i.type, i.status, i.date_reported,
+      `SELECT i.item_id, i.title, i.description, i.type, i.status, i.date_reported, i.photo_filename,
               c.name AS category, l.name AS location
        FROM items AS i
        LEFT JOIN categories AS c ON c.category_id = i.category_id
@@ -218,7 +223,12 @@ router.get('/report', requireLogin, async (req, res) => {
   }
 });
 
-router.post('/report', requireLogin, async (req, res) => {
+router.post('/report', requireLogin, (req,res,next) => {
+  if (rateLimited(`report:${req.session.user.user_id}`,20,15*60000)) return res.status(429).send('Too many reports. Please wait 15 minutes.');
+  next();
+}, receivePhoto, async (req, res) => {
+  req.body = req.body || {};
+  if (!validFormToken(req)) return res.status(403).send('This form expired. Reload the report form and try again.');
   const title = (typeof req.body.title === 'string' ? req.body.title : '').trim();
   const description = (typeof req.body.description === 'string' ? req.body.description : '').trim();
   const type = req.body.type;
@@ -226,6 +236,8 @@ router.post('/report', requireLogin, async (req, res) => {
   const categoryId = Number(req.body.category_id);
   const locationId = Number(req.body.location_id);
   const errors = [];
+  if (req.photoError) errors.push(req.photoError);
+  let photoFilename = null;
 
   if (!title || title.length > 100) errors.push('Item name is required and must be 100 characters or fewer.');
   if (description.length > 5000) errors.push('Description must be 5,000 characters or fewer.');
@@ -250,16 +262,57 @@ router.post('/report', requireLogin, async (req, res) => {
       });
     }
 
+    photoFilename = await savePhoto(req.file);
     await pool.query(
-      `INSERT INTO items (title, description, type, date_reported, category_id, location_id, reported_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [title, description || null, type, dateReported, categoryId, locationId, req.session.user.user_id]
+      `INSERT INTO items (title, description, type, date_reported, category_id, location_id, reported_by, photo_filename)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || null, type, dateReported, categoryId, locationId, req.session.user.user_id, photoFilename]
     );
     res.redirect('/report?success=1');
   } catch (err) {
+    if (photoFilename) await removePhoto(photoFilename).catch(() => {});
+    if (err.invalidPhoto) {
+      const options = await getFormOptions();
+      return res.status(400).render('report', {
+        title:'Report an item', errors:[err.message],
+        form:{title,description,type,date_reported:dateReported,category_id:categoryId,location_id:locationId},
+        success:false, ...options
+      });
+    }
     console.error('Could not save item report:', err.message);
     res.status(500).send('Could not save your report. Please try again.');
   }
+});
+
+router.post('/items/:id/photo', requireLogin, receivePhoto, async (req,res) => {
+  const itemId=parseItemId(req.params.id);
+  if (!itemId) return res.sendStatus(404);
+  if (!validFormToken(req)) return res.status(403).send('This form expired. Reload the item page and try again.');
+  if (rateLimited(`photo:${req.session.user.user_id}`,10,15*60000)) return res.status(429).send('Please wait 15 minutes before changing more photos.');
+  if (req.photoError || (!req.file && req.body.remove_photo !== '1')) return res.redirect(`/items/${itemId}?photo=invalid`);
+  let connection, filename, oldFilename, committed=false;
+  try {
+    connection=await pool.getConnection();
+    await connection.beginTransaction();
+    const [items]=await connection.query('SELECT photo_filename,reported_by FROM items WHERE item_id=? FOR UPDATE',[itemId]);
+    if (!items.length || items[0].reported_by !== req.session.user.user_id) {
+      await connection.rollback();
+      return res.sendStatus(404);
+    }
+    oldFilename=items[0].photo_filename;
+    filename=req.body.remove_photo === '1' ? null : await savePhoto(req.file);
+    await connection.query('UPDATE items SET photo_filename=? WHERE item_id=?',[filename,itemId]);
+    await connection.commit();
+    committed=true;
+    if (oldFilename) await removePhoto(oldFilename).catch(() => console.error('Could not remove replaced photo.'));
+    res.redirect(`/items/${itemId}?photo=saved`);
+  } catch (error) {
+    if (connection && !committed) await connection.rollback();
+    if (filename && !committed) await removePhoto(filename).catch(() => {});
+    if (error.invalidPhoto) return res.redirect(`/items/${itemId}?photo=invalid`);
+    console.error('Could not update photo:',error.code || 'storage error');
+    res.status(503).send('Could not update your photo. Please try again.');
+  } finally { if (connection) connection.release(); }
 });
 
 module.exports = router;

@@ -1,0 +1,28 @@
+<%- include('partials/header') %>
+<a class="back-link" href="/messages">&larr; Back to messages</a>
+<section class="page-heading">
+  <p class="eyebrow">Private conversation</p>
+  <h1><%= conversation.reporter_id === currentUser.user_id ? conversation.participant_name : conversation.reporter_name %></h1>
+  <p>About <a href="/items/<%= conversation.item_id %>"><%= conversation.item_title %></a>. Only you and the other participant can open this conversation.</p>
+</section>
+<% if (hasOlder || olderPage) { %>
+  <p class="message-pagination"><% if (hasOlder) { %><a href="/messages/<%= conversation.conversation_id %>?before=<%= olderBefore %>">Older messages</a><% } %> <% if (olderPage) { %><a href="/messages/<%= conversation.conversation_id %>">Latest messages</a><% } %></p>
+<% } %>
+<div class="message-list" aria-label="Conversation messages">
+  <% messages.forEach(function (message) { %>
+    <article class="message-bubble <%= message.sender_id === currentUser.user_id ? 'message-own' : '' %>">
+      <p class="message-author"><%= message.sender_id === currentUser.user_id ? 'You' : message.sender_name %></p>
+      <p class="message-body"><%= message.body %></p>
+      <time class="meta" datetime="<%= new Date(message.created_at).toISOString() %>"><%= new Date(message.created_at).toLocaleString('en-GB') %></time>
+    </article>
+  <% }); %>
+</div>
+<% if (errors.length) { %><div class="errors" role="alert"><% errors.forEach(function (error) { %><p><%= error %></p><% }); %></div><% } %>
+<form class="form-box message-reply" method="post" action="/messages/<%= conversation.conversation_id %>">
+  <input type="hidden" name="csrf" value="<%= formCsrf %>">
+  <label for="message">Your message</label>
+  <textarea id="message" name="message" rows="4" maxlength="2000" required><%= draft %></textarea>
+  <p class="form-help">Up to 2,000 characters. Refresh to see new replies.</p>
+  <button type="submit">Send message</button>
+</form>
+<%- include('partials/footer') %>
